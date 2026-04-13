@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>记忆翻牌 · 杭电食堂挑战</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #fa7c5c 0%, #f5b042 100%);
+            padding: 20px;
+        }
+
+        .game-card {
+            background: rgba(255, 248, 235, 0.98);
+            border-radius: 32px;
+            padding: 24px 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            max-width: 650px;
+            width: 100%;
+            animation: slideUp 0.5s ease;
+            backdrop-filter: blur(2px);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .game-header h1 {
+            font-size: 1.9rem;
+            color: #c94f2c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .building-name {
+            background: #ffefe3;
+            display: inline-block;
+            padding: 6px 20px;
+            border-radius: 40px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #c1622e;
+            box-shadow: inset 0 0 0 1px #ffd6b5;
+        }
+
+        .stats-container {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+
+        .stat {
+            text-align: center;
+            background: #fff6ed;
+            padding: 10px 15px;
+            border-radius: 20px;
+            flex: 1;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #e67e22;
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: #b87b4a;
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+
+        /* 游戏网格 */
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            aspect-ratio: 1 / 1;
+            background: linear-gradient(145deg, #fa9a6e, #f5b042);
+            border-radius: 18px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            transform-style: preserve-3d;
+            box-shadow: 0 8px 14px rgba(0,0,0,0.15);
+        }
+
+        .card:active {
+            transform: scale(0.96);
+        }
+
+        .card.flipped, .card.matched {
+            background: #ffffff;
+            transform: rotateY(180deg);
+        }
+
+        .card.matched {
+            background: #74ff7b !important;
+            cursor: default;
+            opacity: 1 !important;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        .card.matched .card-front {
+            background: #ffb727 !important;
+            color: white !important;
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backface-visibility: hidden;
+            border-radius: 18px;
+            font-size: 2.4rem;
+            font-weight: 500;
+        }
+
+        .card-front {
+            background: white;
+            transform: rotateY(180deg);
+            color: #e67e22;
+            font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', sans-serif;
+        }
+
+        .card-back {
+            background: linear-gradient(135deg, #ffb347, #ff8c42);
+            color: #fff3e0;
+            font-size: 1.8rem;
+            font-weight: bold;
+            content: "?";
+            font-family: monospace;
+        }
+
+        /* 进度条 */
+        .progress-section {
+            margin-bottom: 20px;
+        }
+        .progress-bar {
+            background: #f0e0cf;
+            height: 10px;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            background: linear-gradient(90deg, #e67e22, #f5b042);
+            width: 0%;
+            height: 100%;
+            transition: width 0.3s ease;
+            border-radius: 12px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 14px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 0;
+            border: none;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #e67e22, #f5b042);
+            color: white;
+            box-shadow: 0 4px 12px rgba(230,126,34,0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.02);
+        }
+
+        .btn-secondary {
+            background: #f4ede5;
+            color: #b45f2a;
+            border: 1px solid #ffddb0;
+        }
+
+        .btn-secondary:hover {
+            background: #ffe8da;
+        }
+
+        .btn-gold {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: white;
+        }
+
+        .btn-gold:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+        }
+
+        .game-tip {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #bb884e;
+            margin-top: 16px;
+        }
+
+        @media (max-width: 500px) {
+            .game-board { gap: 8px; }
+            .card-front, .card-back { font-size: 1.8rem; }
+            .stat-value { font-size: 1.6rem; }
+            .game-header h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-card">
+    <div class="game-header">
+        <h1>🍽️ 记忆翻牌 · 杭电食堂</h1>
+        <div class="building-name" id="buildingDisplay">加载美味中...</div>
+    </div>
+
+    <div class="stats-container">
+        <div class="stat">
+            <div class="stat-value" id="moves">0</div>
+            <div class="stat-label">尝试步数</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="pairs">0/6</div>
+            <div class="stat-label">美食配对</div>
+        </div>
+    </div>
+
+    <div class="game-board" id="gameBoard"></div>
+
+    <div class="progress-section">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn btn-primary" id="restartBtn">🔄 重新挑战</button>
+        <button class="btn btn-secondary" id="backBtn">🗺️ 返回地图</button>
+    </div>
+    <div class="action-buttons" style="margin-top: 10px;">
+        <button class="btn btn-gold" id="quickWinBtn">🏆 一键通关</button>
+    </div>
+    <div class="game-tip">
+        💡 翻开卡片，配对相同的美食图标。全部配对成功即解锁食堂地标！
+    </div>
+</div>
+
+<script>
+    // ------------------ 食堂美食图标库 ------------------
+    const foodIcons = {
+        'canteen1': ['🍚', '🍜', '🥟', '🍲', '🥗', '🍛'],
+        'canteen2': ['🍔', '🍕', '🌮', '🥙', '🍝', '🍱'],
+        'canteen3': ['🥩', '🍗', '🥓', '🍖', '🐟', '🦐']
+    };
+
+    const buildingNames = {
+        'canteen1': '🍽️ 一餐 & 清真餐厅 · 风味人间',
+        'canteen2': '🍽️ 三餐 & 美食城 · 烟火食堂',
+        'canteen3': '🍽️ 第三食堂 · 舌尖杭电'
+    };
+
+    const funFacts = {
+        'canteen1': '🍚 一餐的葱油拌面、清真的牛肉拉面是早八人的动力源泉！',
+        'canteen2': '🍔 三餐的鸡排饭、美食城的麻辣香锅，堪称"杭电米其林"！',
+        'canteen3': '🥩 第三食堂的烤鱼和铁板饭，干饭人必冲的宝藏食堂！'
+    };
+
+    let currentLevel = 'canteen1';
+    let cards = [];
+    let cardElements = [];
+    let flippedIndices = [];
+    let matchedPairs = 0;
+    let moves = 0;
+    let canFlip = true;
+    let lockBoard = false;
+    let timeoutId = null;
+
+    const buildingDisplay = document.getElementById('buildingDisplay');
+    const movesDisplay = document.getElementById('moves');
+    const pairsDisplay = document.getElementById('pairs');
+    const progressFill = document.getElementById('progressFill');
+    const gameBoard = document.getElementById('gameBoard');
+    const restartBtn = document.getElementById('restartBtn');
+    const backBtn = document.getElementById('backBtn');
+    const quickWinBtn = document.getElementById('quickWinBtn');
+
+    function shuffleArray(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    function initGame() {
+        if (timeoutId) clearTimeout(timeoutId);
+        
+        const storedLevel = localStorage.getItem('currentLevel');
+        if (storedLevel && foodIcons[storedLevel]) {
+            currentLevel = storedLevel;
+        } else {
+            currentLevel = 'canteen2';
+        }
+
+        buildingDisplay.textContent = buildingNames[currentLevel] || '杭电食堂 · 记忆挑战';
+        
+        const iconSet = foodIcons[currentLevel];
+        if (!iconSet) {
+            cards = ['🍚', '🍚', '🍜', '🍜', '🥟', '🥟', '🍲', '🍲', '🥗', '🥗', '🍛', '🍛'];
+        } else {
+            cards = [...iconSet, ...iconSet];
+        }
+        cards = shuffleArray(cards);
+        
+        matchedPairs = 0;
+        moves = 0;
+        flippedIndices = [];
+        canFlip = true;
+        lockBoard = false;
+        if (timeoutId) clearTimeout(timeoutId);
+        
+        updateStatsUI();
+        renderBoard();
+    }
+
+    function renderBoard() {
+        gameBoard.innerHTML = '';
+        cardElements = [];
+        
+        cards.forEach((icon, idx) => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.setAttribute('data-index', idx);
+            card.setAttribute('data-icon', icon);
+            
+            const frontFace = document.createElement('div');
+            frontFace.className = 'card-front';
+            frontFace.textContent = icon;
+            
+            const backFace = document.createElement('div');
+            backFace.className = 'card-back';
+            backFace.textContent = '?';
+            
+            card.appendChild(frontFace);
+            card.appendChild(backFace);
+            
+            card.addEventListener('click', () => onCardClick(idx));
+            
+            gameBoard.appendChild(card);
+            cardElements.push(card);
+        });
+    }
+    
+    function onCardClick(clickedIdx) {
+        if (lockBoard) return;
+        if (!canFlip) return;
+        const clickedCard = cardElements[clickedIdx];
+        if (clickedCard.classList.contains('matched')) return;
+        if (flippedIndices.includes(clickedIdx)) return;
+        if (flippedIndices.length >= 2) return;
+        
+        flipCardOpen(clickedIdx);
+        flippedIndices.push(clickedIdx);
+        
+        if (flippedIndices.length === 2) {
+            moves++;
+            updateStatsUI();
+            
+            const idxA = flippedIndices[0];
+            const idxB = flippedIndices[1];
+            const iconA = cards[idxA];
+            const iconB = cards[idxB];
+            
+            if (iconA === iconB) {
+                lockBoard = true;
+                setTimeout(() => {
+                    cardElements[idxA].classList.add('matched');
+                    cardElements[idxB].classList.add('matched');
+                    matchedPairs++;
+                    updateStatsUI();
+                    flippedIndices = [];
+                    lockBoard = false;
+                    
+                    if (matchedPairs === 6) {
+                        endGame(true);
+                    }
+                }, 400);
+            } else {
+                lockBoard = true;
+                setTimeout(() => {
+                    flipCardClose(idxA);
+                    flipCardClose(idxB);
+                    flippedIndices = [];
+                    lockBoard = false;
+                }, 800);
+            }
+        }
+    }
+    
+    function flipCardOpen(idx) {
+        const card = cardElements[idx];
+        if (!card.classList.contains('flipped') && !card.classList.contains('matched')) {
+            card.classList.add('flipped');
+        }
+    }
+    
+    function flipCardClose(idx) {
+        const card = cardElements[idx];
+        if (card.classList.contains('flipped') && !card.classList.contains('matched')) {
+            card.classList.remove('flipped');
+        }
+    }
+    
+    function updateStatsUI() {
+        movesDisplay.textContent = moves;
+        pairsDisplay.textContent = `${matchedPairs}/6`;
+        const percent = (matchedPairs / 6) * 100;
+        progressFill.style.width = percent + '%';
+    }
+    
+    function endGame(success) {
+        if (!success) return;
+        if (matchedPairs !== 6) return;
+        
+        lockBoard = true;
+        canFlip = false;
+        
+        localStorage.setItem(currentLevel, "unlocked");
+        localStorage.setItem(`unlocked_${currentLevel}`, 'true');
+        
+        const fact = funFacts[currentLevel] || '🍛 杭电食堂，美味记忆，舌尖上的青春！';
+        const buildingTitle = buildingNames[currentLevel] || '食堂地标';
+        
+        setTimeout(() => {
+            alert(`🎉 记忆翻牌成功！\n✨ ${buildingTitle}\n📖 ${fact}\n\n步数: ${moves} 步 | 完美解锁杭电美食地图！`);
+            window.location.href = `../map.html?completed=${currentLevel}&info=true`;
+        }, 200);
+    }
+    
+    function restartGame() {
+        if (lockBoard) {
+            if (timeoutId) clearTimeout(timeoutId);
+            lockBoard = false;
+        }
+        if (timeoutId) clearTimeout(timeoutId);
+        flippedIndices = [];
+        initGame();
+    }
+    
+    function goBack() {
+        if (confirm('确定要返回杭电地图吗？当前记忆进度将不会保存。')) {
+            window.location.href = '../map.html';
+        }
+    }
+    
+    // 一键通关
+    function quickWin() {
+        if (lockBoard) return;
+        
+        if (confirm('确定要直接通关吗？')) {
+            if (timeoutId) clearTimeout(timeoutId);
+            
+            matchedPairs = 6;
+            
+            cardElements.forEach((card) => {
+                if (!card.classList.contains('matched')) {
+                    card.classList.add('matched');
+                    card.classList.add('flipped');
+                }
+            });
+            
+            flippedIndices = [];
+            lockBoard = false;
+            canFlip = true;
+            updateStatsUI();
+            
+            localStorage.setItem(currentLevel, "unlocked");
+            localStorage.setItem(`unlocked_${currentLevel}`, 'true');
+            
+            const fact = funFacts[currentLevel] || '🍛 杭电食堂，美味记忆，舌尖上的青春！';
+            const buildingTitle = buildingNames[currentLevel] || '食堂地标';
+            
+            setTimeout(() => {
+                alert(`🎉 一键通关成功！\n✨ ${buildingTitle}\n📖 ${fact}\n\n成功解锁杭电美食地图！`);
+                window.location.href = `../map.html?completed=${currentLevel}&info=true`;
+            }, 200);
+        }
+    }
+    
+    // 绑定按钮事件
+    restartBtn.addEventListener('click', restartGame);
+    backBtn.addEventListener('click', goBack);
+    quickWinBtn.addEventListener('click', quickWin);
+    
+    window.addEventListener('load', () => {
+        initGame();
+    });
+    
+    window.addEventListener('beforeunload', () => {
+        if (timeoutId) clearTimeout(timeoutId);
+    });
+    
+    const style = document.createElement('style');
+    style.textContent = `
+        .card-front {
+            font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', 'Android Emoji', 'EmojiOne Color', 'Twemoji Mozilla', 'Apple Color Emoji', sans-serif;
+            font-weight: 500;
+            text-align: center;
+            line-height: 1;
+        }
+        .card-back {
+            font-family: monospace;
+            font-size: 2rem;
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+</body>
+</html>

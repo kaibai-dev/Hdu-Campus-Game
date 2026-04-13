@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>挑战关卡 · 极简卡片</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .game-card {
+            background: white;
+            border-radius: 32px;
+            padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            max-width: 650px;
+            width: 100%;
+            animation: slideUp 0.5s ease;
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .game-header h1 {
+            font-size: 2.5rem;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .building-name {
+            color: #667eea;
+            font-size: 1.2rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .stats-container {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            gap: 20px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 20px;
+            flex: 1;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            color: #888;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 5px;
+        }
+
+        .stat-card.warning .stat-value {
+            color: #e74c3c;
+        }
+
+        .game-area {
+            background: linear-gradient(145deg, #f1f3f5, #e9ecef);
+            border-radius: 24px;
+            margin-bottom: 30px;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        #gameArea {
+            width: 100%;
+            height: 350px;
+            position: relative;
+            overflow: hidden;
+            border-radius: 24px;
+            cursor: crosshair;
+        }
+
+        #target {
+            width: 80px;
+            height: 80px;
+            position: absolute;
+            cursor: pointer;
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+            transition: all 0.2s ease;
+            animation: pulse 2s infinite;
+            user-select: none;
+            border: 3px solid white;
+        }
+
+        #target:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 30px rgba(102, 126, 234, 0.5);
+        }
+
+        #target:active {
+            transform: scale(0.95);
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3); }
+            50% { box-shadow: 0 12px 30px rgba(102, 126, 234, 0.6); }
+        }
+
+        .progress-section {
+            margin-bottom: 30px;
+        }
+
+        .progress-bar {
+            background: #e9ecef;
+            height: 8px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            height: 100%;
+            width: 0%;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+
+        .goal-text {
+            text-align: center;
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .goal-text span {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+            flex: 2;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #666;
+            flex: 1;
+        }
+
+        .btn-secondary:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+
+        .game-tip {
+            text-align: center;
+            margin-top: 20px;
+            color: #aaa;
+            font-size: 0.85rem;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .score-pop {
+            animation: pop 0.3s ease;
+        }
+
+        @keyframes pop {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        @media (max-width: 500px) {
+            .game-card { padding: 25px 20px; }
+            .game-header h1 { font-size: 2rem; }
+            .stat-value { font-size: 2rem; }
+            .stat-icon { font-size: 1.5rem; }
+            #target { width: 70px; height: 70px; }
+            .btn { padding: 12px 20px; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-card">
+
+    <div class="game-header">
+        <h1>⚔️ 挑战关卡</h1>
+        <div class="building-name" id="buildingDisplay">加载中...</div>
+    </div>
+
+    <div class="stats-container">
+        <div class="stat-card" id="timeCard">
+            <div class="stat-icon">⏰</div>
+            <div class="stat-value" id="time">10</div>
+            <div class="stat-label">剩余时间</div>
+        </div>
+        <div class="stat-card" id="scoreCard">
+            <div class="stat-icon">🏆</div>
+            <div class="stat-value" id="score">0</div>
+            <div class="stat-label">当前得分</div>
+        </div>
+    </div>
+
+    <div class="game-area">
+        <div id="gameArea">
+            <div id="target"></div>
+        </div>
+    </div>
+
+    <div class="progress-section">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="goal-text">
+            目标: <span>5分</span> 即可解锁 · 当前 <span id="progressText">0/5</span>
+        </div>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn btn-primary" onclick="restartGame()">🔄 重新挑战</button>
+        <button class="btn btn-secondary" onclick="goBack()">🗺️ 返回地图</button>
+    </div>
+
+    <div class="game-tip">
+        💡 点击目标物得分 · 时间结束前获得5分即可解锁
+    </div>
+
+</div>
+
+<script>
+const buildingImages = {
+    'teachingA': '../images/challenge/teachingA.png',
+    'teachingB': '../images/challenge/teachingB.png',
+    'teachingC': '../images/challenge/teachingC.png',
+    'teachingD': '../images/challenge/teachingD.png'
+};
+
+const buildingNames = {
+    'teachingA': '🏫 6教7教',
+    'teachingB': '🏫 1教2教',
+    'teachingC': '🏫 3教',
+    'teachingD': '🏫 4教'
+};
+
+const TARGET_SCORE = 5;
+const INIT_TIME = 10;
+const MOVE_INTERVAL = 700;
+
+let score = 0;
+let time = INIT_TIME;
+let gameOver = false;
+let timer = null;
+let moveTimer = null;
+
+const target = document.getElementById('target');
+const area = document.getElementById('gameArea');
+const timeDisplay = document.getElementById('time');
+const scoreDisplay = document.getElementById('score');
+const progressFill = document.getElementById('progressFill');
+const progressText = document.getElementById('progressText');
+const timeCard = document.getElementById('timeCard');
+const scoreCard = document.getElementById('scoreCard');
+const buildingDisplay = document.getElementById('buildingDisplay');
+
+function init() {
+    const level = localStorage.getItem("currentLevel") || 'teachingA';
+    buildingDisplay.textContent = buildingNames[level] || '未知建筑';
+
+    const imageUrl = buildingImages[level];
+    target.style.cssText = `
+        width: 80px;
+        height: 80px;
+        position: absolute;
+        cursor: pointer;
+        border-radius: 20px;
+        border: 3px solid white;
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        background-image: url('${imageUrl}');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    `;
+
+    updateProgress();
+    target.onclick = handleClick;
+    moveTarget();
+    moveTimer = setInterval(() => { if (!gameOver) moveTarget(); }, MOVE_INTERVAL);
+    timer = setInterval(updateTimer, 1000);
+}
+
+function handleClick() {
+    if (gameOver) return;
+    score++;
+    scoreDisplay.textContent = score;
+    scoreCard.classList.add('score-pop');
+    setTimeout(() => scoreCard.classList.remove('score-pop'), 300);
+    updateProgress();
+    if (score >= TARGET_SCORE) { endGame(); return; }
+    moveTarget();
+    if (navigator.vibrate) navigator.vibrate(10);
+}
+
+function moveTarget() {
+    if (gameOver) return;
+    const targetSize = target.offsetWidth;
+    const maxX = area.clientWidth - targetSize;
+    const maxY = area.clientHeight - targetSize;
+    if (maxX <= 0 || maxY <= 0) return;
+    target.style.left = Math.random() * maxX + 'px';
+    target.style.top = Math.random() * maxY + 'px';
+}
+
+function updateTimer() {
+    if (gameOver) return;
+    time--;
+    timeDisplay.textContent = time;
+    if (time <= 3) timeCard.classList.add('warning');
+    if (time <= 0) endGame();
+}
+
+function updateProgress() {
+    progressFill.style.width = Math.min((score / TARGET_SCORE) * 100, 100) + '%';
+    progressText.textContent = `${score}/${TARGET_SCORE}`;
+}
+
+function endGame() {
+    if (gameOver) return;
+    gameOver = true;
+    clearInterval(timer);
+    clearInterval(moveTimer);
+    const level = localStorage.getItem("currentLevel");
+    if (score >= TARGET_SCORE) {
+        localStorage.setItem(level, "unlocked");
+        setTimeout(() => {
+            alert(`🎉 恭喜！解锁成功！\n你获得了 ${score} 分！`);
+            window.location.href = `../map.html?showInfo=${level}`;
+        }, 100);
+    } else {
+        setTimeout(() => {
+            alert(`❌ 挑战失败...\n得分: ${score}/${TARGET_SCORE}\n再试一次吧！`);
+            window.location.href = "../map.html";
+        }, 100);
+    }
+}
+
+function restartGame() {
+    if (confirm('确定要重新开始吗？')) {
+        score = 0;
+        time = INIT_TIME;
+        gameOver = false;
+        scoreDisplay.textContent = '0';
+        timeDisplay.textContent = INIT_TIME;
+        updateProgress();
+        timeCard.classList.remove('warning');
+        clearInterval(timer);
+        clearInterval(moveTimer);
+        timer = setInterval(updateTimer, 1000);
+        moveTimer = setInterval(() => { if (!gameOver) moveTarget(); }, MOVE_INTERVAL);
+        moveTarget();
+    }
+}
+
+function goBack() {
+    if (gameOver || confirm('游戏进行中，确定要返回吗？')) {
+        window.location.href = "../map.html";
+    }
+}
+
+window.onload = init;
+window.onbeforeunload = () => { clearInterval(timer); clearInterval(moveTimer); };
+window.addEventListener('resize', () => { if (!gameOver) moveTarget(); });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>杭电下沙校区地图册 - 动态热区</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .app {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            animation: fadeInDown 0.6s ease;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header .subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        /* 区域进度条 */
+        .zone-progress {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .zone-item {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(5px);
+            padding: 8px 20px;
+            border-radius: 30px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .zone-name {
+            font-weight: bold;
+        }
+
+        .zone-count {
+            background: rgba(255,255,255,0.2);
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .zone-count.completed {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .map-container {
+            position: relative;
+            background: #f0f0f0;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            width: 85%;            /* 2/3 宽度 */
+            margin: 0 auto;           /* 居中显示 */
+        }
+
+        .map-background {
+            width: 100%;
+            height: auto;
+            display: block;
+            pointer-events: none;
+        }
+
+        .map-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .clickable-area {
+            cursor: pointer;
+        }
+
+        .hotspot {
+            fill: rgba(255, 107, 107, 0.1);
+            stroke: rgba(255, 107, 107, 0.4);
+            stroke-width: 2;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .hotspot:hover {
+            fill: rgba(255, 107, 107, 0.6);
+            stroke-width: 3;
+            filter: drop-shadow(0 0 8px rgba(255,107,107,0.5));
+        }
+
+        .marker-icon {
+            cursor: pointer;
+            transition: filter 0.2s ease;
+        }
+
+        .marker-icon:hover {
+            filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.9));
+        }
+
+        .marker-icon:hover .pulse-ring {
+            animation-play-state: paused;
+        }
+
+        /* 确保文字始终保持白色 */
+        .marker-label {
+            font-size: 14px;
+            font-weight: bold;
+            fill: #fff !important;  /* 强制白色 */
+            stroke: #333;
+            stroke-width: 0.5;
+            paint-order: stroke;
+            cursor: pointer;
+            pointer-events: none;
+        }
+
+        @keyframes pulse {
+            0%   { 
+                r: 10;  
+                opacity: 0.8; 
+                stroke-width: 3;
+            }
+            100% { 
+                r: 28;  
+                opacity: 0; 
+                stroke-width: 1;
+            }
+        }
+
+        .pulse-ring {
+            animation: pulse 3s ease-out infinite;
+        }
+
+        .info-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .info-panel {
+            background: white;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 550px;
+            max-height: 85vh;
+            overflow-y: auto;
+            animation: slideUp 0.4s ease;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+        }
+
+        .info-panel::-webkit-scrollbar { width: 6px; }
+        .info-panel::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .info-panel::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+
+        .panel-header {
+            position: relative;
+            height: 220px;
+            overflow: hidden;
+            border-radius: 24px 24px 0 0;
+        }
+
+        .panel-header img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        .close-btn:hover {
+            background: rgba(0,0,0,0.8);
+            transform: rotate(90deg);
+        }
+
+        .panel-content {
+            padding: 24px;
+        }
+
+        .panel-content h2 {
+            font-size: 28px;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .info-section {
+            margin: 20px 0;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .info-icon {
+            font-size: 24px;
+            width: 40px;
+        }
+
+        .info-text {
+            flex: 1;
+        }
+
+        .info-text strong {
+            display: block;
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .info-text span {
+            color: #333;
+            font-size: 14px;
+        }
+
+        .description {
+            line-height: 1.8;
+            color: #555;
+            margin-top: 16px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .control-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 30px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            body { padding: 12px; }
+            .header h1 { font-size: 1.8rem; }
+            .panel-header { height: 180px; }
+            .panel-content h2 { font-size: 22px; }
+            .marker-label { font-size: 10px; }
+            .zone-progress { gap: 15px; }
+            .zone-item { padding: 6px 15px; font-size: 0.85rem; }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="app">
+            <div class="header">
+                <h1>🏛️ 杭电下沙校区地图册</h1>
+                <p class="subtitle">杭州电子科技大学 | 点击建筑查看详细信息</p>
+                
+                <!-- 区域进度显示 -->
+                <div class="zone-progress">
+                    <div class="zone-item">
+                        <span class="zone-name">🏃 生活运动区</span>
+                        <span class="zone-count" :class="{ completed: lifeZoneProgress.unlocked === lifeZoneProgress.total }">
+                            {{ lifeZoneProgress.unlocked }}/{{ lifeZoneProgress.total }}
+                        </span>
+                    </div>
+                    <div class="zone-item">
+                        <span class="zone-name">📚 教学区</span>
+                        <span class="zone-count" :class="{ completed: teachingZoneProgress.unlocked === teachingZoneProgress.total }">
+                            {{ teachingZoneProgress.unlocked }}/{{ teachingZoneProgress.total }}
+                        </span>
+                        <span v-if="!isLifeZoneFullyUnlocked" style="margin-left: 5px; opacity: 0.7;">🔒</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="map-container">
+                <img
+                    src="images/hduMap.jpg"
+                    alt="杭电下沙校区地图"
+                    class="map-background"
+                >
+
+                <svg
+                    class="map-overlay"
+                    viewBox="0 0 760 1279"
+                    preserveAspectRatio="none"
+                >
+                    <!-- ===== 图书馆（教学区） ===== -->
+                    <g class="clickable-area" @click="showBuildingInfo('library')">
+                        <polygon
+                            class="hotspot"
+                            points="310,400 380,400 380,440 310,440"
+                        />
+                        <g class="marker-icon" transform="translate(345, 420)">
+                            <circle r="12" fill="#ff6b6b" stroke="white" stroke-width="2"/>
+                            <circle r="4" fill="white"/>
+                            <circle r="16" fill="none" stroke="#ff6b6b" stroke-width="1.5" class="pulse-ring"/>
+                            <text x="0" y="-24" class="marker-label" text-anchor="middle">
+                                📚 图书馆{{ getStatusIcon('library') }}
+                            </text>
+                        </g>
+                    </g>
+                    <!-- ===== 教学楼A（教学区） ===== -->
+                    <g class="clickable-area" @click="showBuildingInfo('teachingA')">
+                        <polygon
+                            class="hotspot"
+                            points="220,440 450,440 450,490 220,490"
+                        />
+                        <g class="marker-icon" transform="translate(335, 465)">
+                            <circle r="12" fill="#ffa500" stroke="white" stroke-width="2"/>
+                            <circle r="4" fill="white"/>
+                            <!-- 添加这行 -->
+                            <circle r="18" fill="none" stroke="#ffa500" stroke-width="1.5" class="pulse-ring"/>
+                            <text x="0" y="-22" class="marker-label" text-anchor="middle">
+                                🏫 6教7教{{ getStatusIcon('teachingA') }}
+                            </text>
+                        </g>
+                    </g>
+
+                    <!-- ===== 1教2教（教学区） ===== -->
+                    <g class="clickable-area" @click="showBuildingInfo('teachingB')">
+                        <polygon
+                            class="hotspot"
+                            points="250,630 430,630 430,680 250,680"
+                        />
+                        <g class="marker-icon" transform="translate(340, 655)">
+                            <circle r="13" fill="#ff9800" stroke="white" stroke-width="2"/>
+                            <circle r="5" fill="white"/>
+                            <circle r="18" fill="none" stroke="#ff9800" stroke-width="1.5" class="pulse-ring"/>
+                            <text x="0" y="-26" class="marker-label" text-anchor="middle">
+                                🏛️ 1教2教{{ getStatusIcon('teachingB') }}
+                            </text>
+                        </g>
+                    </g>
+                    <!-- ===== 3教（教学区） ===== -->
+                    <g class="clickable-area" @click="showBuildingInfo('teachingC')">
+                        <polygon
+                            class="hotspot"
+                            points="376,576 437,576 437,617 376,617"
+                        />
+                        <g class="marker-icon" transform="translate(406.5, 596.5)">
+                            <circle r="13" fill="#e91e63" stroke="white" stroke-width="2"/>
+                            <circle r="5" fill="white"/>
+                            <circle r="18" fill="none" stroke="#e91e63" stroke-width="1.5" class="pulse-ring"/>
+                            <text x="0" y="-26" class="marker-label" text-anchor="middle">
+                                🏢 3教{{ getStatusIcon('teachingC') }}
+                            </text>
+                        </g>
+                    </g>
+                    <!-- ===== 4教（教学区） ===== -->
+                    <g class="clickable-area" @click="showBuildingInfo('teachingD')">
+                        <polygon
+                            class="hotspot"
+                            points="246,535 318,535 318,583 246,583"
+                        />
+                        <g class="marker-icon" transform="translate(282, 559)">
+                            <circle r="12" fill="#00bcd4" stroke="white" stroke-width="2"/>
+                            <circle r="4" fill="white"/>
+                            <circle r="16" fill="none" stroke="#00bcd4" stroke-width="1.5" class="pulse-ring"/>
+                            <text x="0" y="-22" class="marker-label" text-anchor="middle">
+                                🏛️ 4教{{ getStatusIcon('teachingD') }}
+                            </text>
+                        </g>
+                    </g>
+                    <!-- 🍚 一餐、清真餐厅（生活运动区） -->
+                    <g class="clickable-area" @click="showBuildingInfo('canteen1')">
+                        <polygon class="hotspot" points="210,300 250,300 250,340 210,340" />
+                        <g class="marker-icon" transform="translate(230, 320)">
+                            <circle r="13" fill="#4caf50" stroke="white" stroke-width="2"/>
+                            <circle r="5" fill="white"/>
+                            <!-- 添加这行 -->
+                            <circle r="18" fill="none" stroke="#4caf50" stroke-width="1.5" class="pulse-ring"/>
+                            <text x="0" y="-26" class="marker-label" text-anchor="middle">
+                                🍚 一餐、清真餐厅{{ getStatusIcon('canteen1') }}
+                            </text>
+                        </g>
+                    </g>
+
+                    <!-- 🍛 三餐、美食城（生活运动区） -->
+                    <g class="clickable-area" @click="showBuildingInfo('canteen2')">
+                        <polygon class="hotspot" points="400,305 450,305 450,350 400,350" />
+                        <g class="marker-icon" transform="translate(425, 327.5)">
+                            <circle r="13" fill="#8bc34a" stroke="white" stroke-width="2"/>
+                            <circle r="5" fill="white"/>
+                            <circle r="18" fill="none" stroke="#8bc34a" stroke-width="1.2" class="pulse-ring"/>
+                            <text x="0" y="-26" class="marker-label" text-anchor="middle">
+                                🍛 三餐、美食城{{ getStatusIcon('canteen2') }}
+                            </text>
+                        </g>
+                    </g>
+
+                    <!-- 🥗 五餐、六餐（生活运动区） -->
+                    <g class="clickable-area" @click="showBuildingInfo('canteen3')">
+                        <polygon class="hotspot" points="410,200 445,200 445,240 410,240" />
+                        <g class="marker-icon" transform="translate(427.5, 220)">
+                            <circle r="13" fill="#66bb6a" stroke="white" stroke-width="2"/>
+                            <circle r="5" fill="white"/>
+                            <circle r="18" fill="none" stroke="#66bb6a" stroke-width="1.2" class="pulse-ring"/>
+                            <text x="0" y="-26" class="marker-label" text-anchor="middle">
+                                🥗 五餐、六餐{{ getStatusIcon('canteen3') }}
+                            </text>
+                        </g>
+                    </g>
+
+                    <!-- ===== 体育馆（生活运动区） ===== -->
+                    <g class="clickable-area" @click="showBuildingInfo('gym')">
+                        <polygon
+                            class="hotspot"
+                            points="100,390,190,390,200,555,100,555"
+                        />
+                        <g class="marker-icon" transform="translate(136, 434)">
+                            <circle r="12" fill="#2196f3" stroke="white" stroke-width="2"/>
+                            <circle r="4" fill="white"/>
+                            <!-- 添加这行 -->
+                            <circle r="18" fill="none" stroke="#2196f3" stroke-width="1.5" class="pulse-ring"/>
+                            <text x="0" y="-22" class="marker-label" text-anchor="middle">
+                                🏟️ 体育馆{{ getStatusIcon('gym') }}
+                            </text>
+                        </g>
+                    </g>
+
+                     <!-- ===== 学生活动中心（教学区） ===== -->
+                    <g class="clickable-area" @click="showBuildingInfo('studentCenter')">
+                        <polygon
+                            class="hotspot"
+                            points="480,390 540,390 540,455 480,455"
+                        />
+                        <g class="marker-icon" transform="translate(510, 422.5)">
+                            <circle r="13" fill="#9c27b0" stroke="white" stroke-width="2"/>
+                            <circle r="5" fill="white"/>
+                            <circle r="18" fill="none" stroke="#9c27b0" stroke-width="1.5" class="pulse-ring"/>
+                            <text x="0" y="-26" class="marker-label" text-anchor="middle">
+                                🎪 学生活动中心{{ getStatusIcon('studentCenter') }}
+                            </text>
+                        </g>
+                    </g>
+                </svg>
+
+            </div>
+
+            <div class="controls">
+                <button class="control-btn" @click="resetView">🗺️ 重置视图</button>
+                <button class="control-btn" @click="toggleHotspot">
+                    🎯 {{ showHotspot ? '隐藏' : '显示' }}热区
+                </button>
+                <button class="control-btn" @click="resetProgress" style="background: rgba(255,0,0,0.3);">
+                    🔄 重置进度
+                </button>
+            </div>
+
+            <div class="footer">
+                <p>📍 点击建筑标记或高亮区域查看详情 | 支持触摸屏操作</p>
+                <p style="font-size:12px;margin-top:8px;">
+                    👑 已解锁 | 🔒 可挑战 | 🚫 区域锁定
+                </p>
+            </div>
+
+            <!-- 详情弹层 -->
+            <div v-if="showInfo" class="info-overlay" @click="closeInfo">
+                <div class="info-panel" @click.stop>
+                    <div class="panel-header">
+                        <img :src="currentBuilding.imageUrl" :alt="currentBuilding.name" @error="handleImageError">
+                        <button class="close-btn" @click="closeInfo">✕</button>
+                    </div>
+                    <div class="panel-content">
+                        <h2>
+                            {{ currentBuilding.name }}
+                            <span class="badge" v-if="currentBuilding.badge">{{ currentBuilding.badge }}</span>
+                        </h2>
+
+                        <div class="info-section">
+                            <div class="info-item" v-for="(value, key) in currentBuilding.details" :key="key">
+                                <div class="info-icon">{{ getIcon(key) }}</div>
+                                <div class="info-text">
+                                    <strong>{{ getLabel(key) }}</strong>
+                                    <span>{{ value }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="description">
+                            <strong>📝 简介</strong><br>
+                            {{ currentBuilding.description }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.14/dist/vue.js"></script>
+    <script>
+    new Vue({
+        el: '#app',
+
+        data: {
+            // 区域定义
+            zones: {
+                life: ['canteen1', 'canteen2', 'canteen3', 'gym'],      // 生活运动区
+                teaching: ['teachingA','teachingB','teachingC','teachingD','studentCenter'], // 教学区
+                final: ['library']  // 最终关卡
+            },
+            
+            buildingsPS: {
+                library: {
+                    name: '图书馆',
+                    badge: '标志建筑',
+                    zone: 'teaching',
+                    imageUrl: 'https://picsum.photos/id/1043/800/500',
+                    details: {
+                        collection: '200万册',
+                        hours: '8:00 - 22:00',
+                        seats: '3000个',
+                        year: '2005年',
+                        floors: '5层'
+                    },
+                    description: '杭电图书馆是学校的标志性建筑，藏书丰富，涵盖工、理、管、文等多学科领域。设有自习室、研讨室、电子阅览室等，是学生学习和研究的重要场所。'
+                },
+                teachingA: {
+                    name: '6教 7教',
+                    badge: '主教学楼',
+                    zone: 'teaching',
+                    imageUrl: 'https://picsum.photos/id/1040/800/500',
+                    details: {
+                        capacity: '5000人',
+                        floors: '6层',
+                        year: '2003年',
+                        courses: '公共课、专业课'
+                    },
+                    description: '6教7教是学校主要的教学场所，拥有多媒体教室、语音室、计算机房等现代化教学设施。'
+                },
+                teachingB: {
+                    name: '1教2教',
+                    badge: '实验楼',
+                    zone: 'teaching',  // 属于教学区
+                    imageUrl: 'https://picsum.photos/id/1041/800/500',
+                    details: {
+                        facilities: '实验室、计算机房、多媒体教室',
+                        floors: '5层',
+                        year: '2006年',
+                        courses: '实验课、上机课'
+                    },
+                    description: '1教2教是学校主要的实验教学场所，配备先进的实验室设备、计算机房和多媒体教室，为理工科学生提供优质的实验教学环境。'
+                },
+                teachingC: {
+                    name: '教学楼C',
+                    badge: '综合楼',
+                    zone: 'teaching',  // 属于教学区
+                    imageUrl: 'https://picsum.photos/id/1042/800/500',
+                    details: {
+                        facilities: '阶梯教室、智慧教室、自习室',
+                        floors: '6层',
+                        year: '2008年',
+                        courses: '公共课、大型讲座'
+                    },
+                    description: '3教是学校的综合教学楼，拥有大型阶梯教室和智慧教室，可容纳大量学生同时上课，是公共课程和学术讲座的主要场所。'
+                },
+                                teachingD: {
+                    name: '4教',
+                    badge: '专业楼',
+                    zone: 'teaching',  // 属于教学区
+                    imageUrl: 'https://picsum.photos/id/1044/800/500',
+                    details: {
+                        facilities: '专业教室、工作室、研讨室',
+                        floors: '4层',
+                        year: '2012年',
+                        courses: '专业课、小班教学'
+                    },
+                    description: '4教是专业课程教学楼，设有各专业专用教室、工作室和研讨室，为小班化教学和专业实践提供优质环境。'
+                },
+                canteen1: {
+                    name: '一餐、清真餐厅',
+                    badge: '美食天地',
+                    zone: 'life',
+                    imageUrl: 'https://picsum.photos/id/1080/800/500',
+                    details: {
+                        cuisine: '中式快餐、面点',
+                        hours: '6:30 - 21:00',
+                        seats: '1200个',
+                        floors: '3层'
+                    },
+                    description: '一餐、清真餐厅提供丰富的中式快餐，价格实惠，口味多样，是学生日常用餐的首选之地。'
+                },
+                canteen2: {
+                    name: '三餐、美食城',
+                    badge: '风味餐厅',
+                    zone: 'life',
+                    imageUrl: 'https://picsum.photos/id/1081/800/500',
+                    details: {
+                        cuisine: '各地风味小吃',
+                        hours: '7:00 - 20:30',
+                        seats: '800个',
+                        floors: '2层'
+                    },
+                    description: '三餐、美食城汇集全国各地风味小吃，麻辣烫、煎饼果子、煲仔饭等应有尽有，满足不同口味需求。'
+                },
+                canteen3: {
+                    name: '五餐、六餐',
+                    badge: '清真食堂',
+                    zone: 'life',
+                    imageUrl: 'https://picsum.photos/id/1082/800/500',
+                    details: {
+                        cuisine: '清真美食',
+                        hours: '7:00 - 20:00',
+                        seats: '500个',
+                        floors: '2层'
+                    },
+                    description: '五餐、六餐是清真食堂，提供正宗清真美食，环境整洁，服务周到。'
+                },
+                gym: {
+                    name: '体育馆',
+                    badge: '运动中心',
+                    zone: 'life',
+                    imageUrl: 'https://picsum.photos/id/1047/800/500',
+                    details: {
+                        facilities: '篮球场、羽毛球馆、健身房',
+                        hours: '8:00 - 21:30',
+                        capacity: '2000人',
+                        year: '2008年'
+                    },
+                    description: '体育馆设施齐全，包括室内篮球场、羽毛球馆、乒乓球室、健身房等，是学生体育锻炼和举办赛事的主要场所。'
+                },
+                studentCenter: {
+                    name: '学生活动中心',
+                    badge: '社团天地',
+                    zone: 'teaching',  // 属于教学区
+                    imageUrl: 'https://picsum.photos/id/1059/800/500',
+                    details: {
+                        facilities: '排练厅、会议室、展览厅',
+                        hours: '8:00 - 22:00',
+                        floors: '4层',
+                        year: '2010年'
+                    },
+                    description: '学生活动中心是学生社团活动的主要场所，设有舞蹈排练厅、音乐练习室、会议室、展览厅等，丰富学生的课余文化生活，是校园文化活动的重要阵地。'
+                }
+            },
+
+            showInfo: false,
+            showHotspot: false,
+            currentBuilding: null,
+            unlocked: {}
+        },
+        computed: {
+            // 检查生活区是否完全解锁
+            isLifeZoneFullyUnlocked() {
+                return this.zones.life.every(key => this.unlocked[key] === true);
+            },
+            
+            // 检查教学区是否完全解锁（新增）
+            isTeachingZoneFullyUnlocked() {
+                return this.zones.teaching.every(key => this.unlocked[key] === true);
+            },
+            
+            // 生活区进度
+            lifeZoneProgress() {
+                const total = this.zones.life.length;
+                const unlocked = this.zones.life.filter(key => this.unlocked[key]).length;
+                return { total, unlocked };
+            },
+            
+            // 教学区进度
+            teachingZoneProgress() {
+                const total = this.zones.teaching.length;
+                const unlocked = this.zones.teaching.filter(key => this.unlocked[key]).length;
+                return { total, unlocked };
+            },
+            
+            
+        },
+        mounted() {
+            this.initUnlock();
+            this.applyHotspotVisibility();
+            
+            // 检测是否需要自动显示建筑详情
+            this.$nextTick(() => {
+                this.checkAutoShowInfo();
+            });
+        },
+
+        methods: {
+            // 获取状态图标
+            getStatusIcon(buildingKey) {
+                if (this.unlocked[buildingKey]) {
+                    return '👑'; // 已解锁
+                }
+                
+                const building = this.buildingsPS[buildingKey];
+                
+                // 图书馆是最终关卡，需要教学区全部解锁
+                if (buildingKey === 'library' && !this.isTeachingZoneFullyUnlocked) {
+                    return '🚫'; // 教学区未全解锁，无法挑战
+                }
+                
+                // 教学区需要生活区全部解锁
+                if (building.zone === 'teaching' && !this.isLifeZoneFullyUnlocked) {
+                    return '🚫';
+                }
+                
+                return '🔒'; // 可以挑战
+            },
+            
+            // 重置所有进度
+            resetProgress() {
+                if (confirm('确定要重置所有解锁进度吗？所有建筑将重新锁定。')) {
+                    localStorage.clear();
+                    location.reload();
+                }
+            },
+            
+            initUnlock() {
+                const keys = Object.keys(this.buildingsPS);
+
+                keys.forEach(key => {
+                    const isUnlocked = localStorage.getItem(key) === "unlocked";
+                    this.$set(this.unlocked, key, isUnlocked);
+                });
+                
+                this.$forceUpdate();
+                console.log("✅ 解锁状态已初始化", this.unlocked);
+            },
+            showBuildingInfo(buildingKey) {
+                // 已解锁 → 显示详情
+                if (this.unlocked[buildingKey]) {
+                    this.currentBuilding = this.buildingsPS[buildingKey];
+                    this.showInfo = true;
+                    document.body.style.overflow = 'hidden';
+                    return;
+                }
+                
+                const building = this.buildingsPS[buildingKey];
+                
+                // 图书馆需要教学区全部解锁
+                if (buildingKey === 'library' && !this.isTeachingZoneFullyUnlocked) {
+                    const lockedTeachingBuildings = this.zones.teaching
+                        .filter(key => !this.unlocked[key])
+                        .map(key => this.buildingsPS[key]?.name || key);
+                    
+                    let message = '🚫 图书馆尚未开放！前面的区域以后再来探索吧(◕ᴗ◕✿)\n\n这是最终关卡，需要先解锁所有教学区建筑：';
+                    lockedTeachingBuildings.forEach(name => {
+                        message += `\n❌ ${name}`;
+                    });
+                    message += '\n\n完成所有教学区挑战后再来探索图书馆吧！';
+                    
+                    alert(message);
+                    return;
+                }
+                
+                // 教学区需要生活区全部解锁
+                if (building.zone === 'teaching' && !this.isLifeZoneFullyUnlocked) {
+                    const lockedLifeBuildings = this.zones.life
+                        .filter(key => !this.unlocked[key])
+                        .map(key => this.buildingsPS[key]?.name || key);
+                    
+                    let message = '🚫 教学区尚未开放！前面的区域以后再来探索吧(◕ᴗ◕✿)\n\n需要先解锁所有生活运动区建筑：';
+                    lockedLifeBuildings.forEach(name => {
+                        message += `\n❌ ${name}`;
+                    });
+                    message += '\n\n完成挑战解锁这些建筑后再来探索教学区吧！';
+                    
+                    alert(message);
+                    return;
+                }
+                
+                // 可以挑战 → 根据建筑类型进入不同游戏
+                localStorage.setItem("currentLevel", buildingKey);
+                
+                // 判断建筑类型并跳转到对应游戏
+                const teachingBuildings = ['teachingA', 'teachingB', 'teachingC', 'teachingD'];
+                const canteenBuildings = ['canteen1', 'canteen2', 'canteen3'];
+                const puzzleBuildings = ['library', 'gym', 'studentCenter'];
+                
+                if (teachingBuildings.includes(buildingKey)) {
+                    window.location.href = "game/challenge.html";  // ← 修改：添加 game/ 路径
+                } else if (canteenBuildings.includes(buildingKey)) {
+                    window.location.href = "game/memory.html";     // ← 修改：添加 game/ 路径
+                } else if (puzzleBuildings.includes(buildingKey)) {
+                    window.location.href = "game/puzzle.html";     // ← 修改：添加 game/ 路径
+                }
+            },
+            closeInfo() {
+                this.showInfo = false;
+                this.currentBuilding = null;
+                document.body.style.overflow = '';
+            },
+
+            resetView() {
+                document.querySelector('.map-container')
+                    .scrollIntoView({ behavior: 'smooth', block: 'start' });
+            },
+
+            toggleHotspot() {
+                this.showHotspot = !this.showHotspot;
+                this.applyHotspotVisibility();
+            },
+
+            applyHotspotVisibility() {
+                document.querySelectorAll('.hotspot').forEach(el => {
+                    el.style.opacity = this.showHotspot ? '1' : '0';
+                });
+            },
+
+            handleImageError(e) {
+                e.target.src = 'https://picsum.photos/id/20/800/500';
+            },
+
+            getIcon(key) {
+                const map = {
+                    collection: '📖', hours: '🕐', seats: '👥', year: '📅',
+                    capacity: '👨‍🎓', facilities: '🏋️', floors: '🏢',
+                    cuisine: '🍳', courses: '📋'
+                };
+                return map[key] || '📌';
+            },
+            getLabel(key) {
+                const map = {
+                    collection: '藏书量', hours: '开放时间', seats: '座位数量',
+                    year: '建成年份', capacity: '容纳人数', facilities: '设施配置',
+                    floors: '建筑层数', cuisine: '餐饮特色', courses: '主要用途'
+                };
+                return map[key] || key;
+            },
+            checkAutoShowInfo() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const showInfoKey = urlParams.get('showInfo');
+                
+                if (showInfoKey && this.buildingsPS[showInfoKey]) {
+                    // 等待解锁状态更新
+                    setTimeout(() => {
+                        if (this.unlocked[showInfoKey]) {
+                            this.currentBuilding = this.buildingsPS[showInfoKey];
+                            this.showInfo = true;
+                            document.body.style.overflow = 'hidden';
+                            
+                            // 清除 URL 参数
+                            if (window.history.replaceState) {
+                                window.history.replaceState({}, document.title, window.location.pathname);
+                            }
+                        }
+                    }, 150);
+                }
+            }
+        }
+    });
+    </script>
+</body>
+</html>

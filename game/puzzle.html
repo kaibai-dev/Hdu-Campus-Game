@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>拼图游戏 · 校园建筑</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            padding: 20px;
+        }
+
+        .game-card {
+            background: white;
+            border-radius: 32px;
+            padding: 25px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 550px;
+            width: 100%;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .game-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .game-header h1 {
+            font-size: 1.8rem;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .building-name {
+            color: #667eea;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .puzzle-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            background: #f0f0f0;
+            padding: 5px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            aspect-ratio: 1;
+        }
+
+        .puzzle-piece {
+            aspect-ratio: 1;
+            background-size: 300% 300%;
+            background-repeat: no-repeat;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            position: relative;
+        }
+
+        .puzzle-piece:hover {
+            transform: scale(0.98);
+            border-color: #667eea;
+        }
+
+        .puzzle-piece.empty {
+            background: #e0e0e0 !important;
+            cursor: default;
+            opacity: 0.5;
+        }
+
+        .puzzle-piece.empty:hover {
+            transform: none;
+            border-color: transparent;
+        }
+
+        /* 拼图碎片上的数字标识（调试用，可以删除） */
+        .piece-number {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            font-size: 10px;
+            padding: 2px 4px;
+            border-radius: 4px;
+            display: none; /* 默认隐藏 */
+        }
+
+        .preview-section {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .preview-image {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto;
+            border-radius: 15px;
+            background-size: cover;
+            background-position: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border: 3px solid white;
+            background-color: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+        }
+
+        .progress-section {
+            margin-bottom: 20px;
+        }
+
+        .progress-bar {
+            background: #e0e0e0;
+            height: 8px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #a8edea, #fed6e3);
+            height: 100%;
+            width: 0%;
+            border-radius: 10px;
+            transition: width 0.3s;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 25px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #a8edea, #fed6e3);
+            color: #333;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(168, 237, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .win-message {
+            text-align: center;
+            margin-top: 15px;
+            padding: 10px;
+            background: #d4edda;
+            border-radius: 10px;
+            color: #155724;
+            font-weight: bold;
+            display: none;
+        }
+
+        @media (max-width: 500px) {
+            .game-card {
+                padding: 20px;
+            }
+            .preview-image {
+                width: 100px;
+                height: 100px;
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-card">
+    <div class="game-header">
+        <h1>
+            🧩 拼图挑战
+        </h1>
+        <div class="building-name" id="buildingDisplay">加载中...</div>
+    </div>
+
+    <div class="preview-section">
+        <!-- 
+            ⚠️ 图片路径配置说明 ⚠️
+            当有真实图片时，请按以下路径放置图片：
+            
+            图书馆：   ../images/puzzle/library.jpg
+            体育馆：   ../images/puzzle/gym.jpg
+            活动中心： ../images/puzzle/student-center.jpg
+            
+            然后在下面的 buildingImages 配置中取消注释图片URL
+            并注释掉 colors 配置
+        -->
+        <div class="preview-image" id="previewImage"></div>
+    </div>
+
+    <div class="puzzle-container" id="puzzleContainer"></div>
+
+    <div class="progress-section">
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+    </div>
+
+    <div class="stats">
+        <div class="stat">
+            <div class="stat-value" id="moves">0</div>
+            <div class="stat-label">移动次数</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="progress">0/8</div>
+            <div class="stat-label">完成度</div>
+        </div>
+    </div>
+
+<div class="action-buttons">
+    <button class="btn btn-primary" onclick="shufflePuzzle()">🔄 重新打乱</button>
+    <button class="btn btn-secondary" onclick="goBack()">🗺️ 返回地图</button>
+</div>
+<div class="action-buttons" style="margin-top: 10px;">
+    <button class="btn" onclick="quickWin()" style="
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        color: white;
+        flex: 1;
+    ">🏆 一键通关</button>
+</div>
+    
+    <div class="win-message" id="winMessage">
+        🎉 恭喜！拼图完成！
+    </div>
+</div>
+
+<script>
+    // ============================================
+    // ⚠️ 图片配置区域 - 请根据实际情况修改 ⚠️
+    // ============================================
+    
+    /*
+     * 方案1：使用真实图片（推荐）
+     * 图片存放路径：../images/puzzle/
+     * 
+     * 图书馆：   ../images/puzzle/library.jpg
+     * 体育馆：   ../images/puzzle/gym.jpg  
+     * 活动中心： ../images/puzzle/student-center.jpg
+     */
+    
+    
+    const buildingImages = {
+        'library': {
+            name: '📚 图书馆',
+            imageUrl: '../images/puzzle/library.png',  // ← 替换为实际图片路径
+            icon: '📚'
+        },
+        'gym': {
+            name: '🏟️ 体育馆',
+            imageUrl: '../images/puzzle/feidieguan.png',      // ← 替换为实际图片路径
+            icon: '⚽'
+        },
+        'studentCenter': {
+            name: '🎪 学生活动中心',
+            imageUrl: '../images/puzzle/library.png', // ← 替换为实际图片路径
+            icon: '🎨'
+        }
+    };
+    
+    
+    // /*
+    //  * 方案2：使用颜色块模拟（当前使用）
+    //  * 当没有真实图片时，使用渐变色块作为占位
+    //  * 有图片后请注释掉这个配置，启用上面的配置
+    //  */
+    // const buildingImages = {
+    //     'library': {
+    //         name: '📚 图书馆',
+    //         colors: ['#8B4513', '#A0522D', '#CD853F', '#DEB887', '#D2691E', '#F4A460', '#8B4513', '#A0522D', '#CD853F'],
+    //         icon: '📚'
+    //     },
+    //     'gym': {
+    //         name: '🏟️ 体育馆',
+    //         colors: ['#4CAF50', '#66BB6A', '#81C784', '#A5D6A7', '#388E3C', '#43A047', '#4CAF50', '#66BB6A', '#81C784'],
+    //         icon: '⚽'
+    //     },
+    //     'studentCenter': {
+    //         name: '🎪 学生活动中心',
+    //         colors: ['#FF6B6B', '#FF8E8E', '#FFB1B1', '#FFD4D4', '#FF4757', '#FF6B81', '#FF6B6B', '#FF8E8E', '#FFB1B1'],
+    //         icon: '🎨'
+    //     }
+    // };
+
+    // ============================================
+    // 游戏逻辑（无需修改）
+    // ============================================
+    
+    const buildingNames = {
+        'library': '📚 图书馆',
+        'gym': '🏟️ 体育馆',
+        'studentCenter': '🎪 学生活动中心'
+    };
+
+    let currentLevel = 'library';
+    let pieces = [];
+    let emptyIndex = 8; // 空白块位置（0-8）
+    let moves = 0;
+    let gameCompleted = false;
+    let correctPositions = [0, 1, 2, 3, 4, 5, 6, 7, 8]; // 正确的位置顺序
+
+    const buildingDisplay = document.getElementById('buildingDisplay');
+    const puzzleContainer = document.getElementById('puzzleContainer');
+    const previewImage = document.getElementById('previewImage');
+    const movesDisplay = document.getElementById('moves');
+    const progressDisplay = document.getElementById('progress');
+    const progressFill = document.getElementById('progressFill');
+    const winMessage = document.getElementById('winMessage');
+
+    // 初始化游戏
+    function init() {
+        currentLevel = localStorage.getItem("currentLevel") || 'library';
+        buildingDisplay.textContent = buildingNames[currentLevel] || '校园建筑';
+        
+        const config = buildingImages[currentLevel];
+        
+        // 设置预览图
+        if (config.imageUrl) {
+            // 使用真实图片
+            previewImage.style.backgroundImage = `url(${config.imageUrl})`;
+            previewImage.style.backgroundSize = 'cover';
+            previewImage.textContent = '';
+        } else {
+            // 使用图标占位
+            previewImage.style.backgroundImage = 'none';
+            previewImage.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+            previewImage.textContent = config.icon;
+            previewImage.style.color = 'white';
+        }
+        
+        // 初始化拼图
+        initPieces();
+        // ⚠️ 添加这行：自动打乱拼图
+        shufflePuzzle();
+        
+        renderPuzzle();
+        updateStats();
+        
+        gameCompleted = false;
+        winMessage.style.display = 'none';
+    }
+
+    // 初始化拼图碎片
+    function initPieces() {
+        const config = buildingImages[currentLevel];
+        pieces = [];
+        
+        for (let i = 0; i < 9; i++) {
+            const piece = {
+                id: i,
+                currentPos: i,
+                correctPos: i
+            };
+            
+            if (config.imageUrl) {
+                // 使用真实图片作为背景
+                piece.background = config.imageUrl;
+            } else {
+                // 使用颜色块
+                piece.color = config.colors[i];
+            }
+            
+            pieces.push(piece);
+        }
+    }
+
+    // 渲染拼图
+    function renderPuzzle() {
+        puzzleContainer.innerHTML = '';
+        const config = buildingImages[currentLevel];
+        
+        // 按当前位置排序
+        const sortedPieces = [...pieces].sort((a, b) => a.currentPos - b.currentPos);
+        
+        sortedPieces.forEach((piece, index) => {
+            const pieceDiv = document.createElement('div');
+            pieceDiv.className = 'puzzle-piece';
+            
+            if (piece.id === emptyIndex) {
+                pieceDiv.classList.add('empty');
+            } else {
+                if (config.imageUrl) {
+                    // 使用真实图片 - 计算背景位置（3x3网格）
+                    const row = Math.floor(piece.correctPos / 3);
+                    const col = piece.correctPos % 3;
+                    pieceDiv.style.backgroundImage = `url(${config.imageUrl})`;
+                    pieceDiv.style.backgroundPosition = `${col * 50}% ${row * 50}%`;
+                    pieceDiv.style.backgroundSize = '300% 300%';
+                } else {
+                    // 使用颜色块
+                    pieceDiv.style.background = piece.color;
+                }
+                
+                // 添加点击事件
+                pieceDiv.onclick = () => movePiece(piece.id);
+            }
+            
+            // 添加数字标识（调试用，可删除）
+            const numberSpan = document.createElement('span');
+            numberSpan.className = 'piece-number';
+            numberSpan.textContent = piece.correctPos;
+            pieceDiv.appendChild(numberSpan);
+            
+            puzzleContainer.appendChild(pieceDiv);
+        });
+    }
+
+    // 移动拼图
+    function movePiece(pieceId) {
+        if (gameCompleted) return;
+        
+        const piece = pieces.find(p => p.id === pieceId);
+        const piecePos = piece.currentPos;
+        const emptyPos = pieces.find(p => p.id === emptyIndex).currentPos;
+        
+        // 检查是否相邻（上下左右）
+        const pieceRow = Math.floor(piecePos / 3);
+        const pieceCol = piecePos % 3;
+        const emptyRow = Math.floor(emptyPos / 3);
+        const emptyCol = emptyPos % 3;
+        
+        const isAdjacent = (Math.abs(pieceRow - emptyRow) + Math.abs(pieceCol - emptyCol)) === 1;
+        
+        if (isAdjacent) {
+            // 交换位置
+            const emptyPiece = pieces.find(p => p.id === emptyIndex);
+            
+            // 更新位置
+            piece.currentPos = emptyPos;
+            emptyPiece.currentPos = piecePos;
+            
+            moves++;
+            
+            renderPuzzle();
+            updateStats();
+            checkWin();
+        }
+    }
+
+    // 打乱拼图 - 模拟真实移动（保证有解）
+    function shufflePuzzle() {
+        // 先恢复到正确顺序
+        pieces.forEach((piece, index) => {
+            piece.currentPos = index;
+        });
+        
+        // 从完成状态开始，模拟200次合法移动
+        for (let i = 0; i < 200; i++) {
+            const emptyPiece = pieces.find(p => p.id === emptyIndex);
+            const emptyPos = emptyPiece.currentPos;
+            const emptyRow = Math.floor(emptyPos / 3);
+            const emptyCol = emptyPos % 3;
+            
+            // 获取可移动的相邻块（上下左右）
+            const adjacentPieces = pieces.filter(p => {
+                if (p.id === emptyIndex) return false;
+                const pos = p.currentPos;
+                const row = Math.floor(pos / 3);
+                const col = pos % 3;
+                return (Math.abs(row - emptyRow) + Math.abs(col - emptyCol)) === 1;
+            });
+            
+            if (adjacentPieces.length > 0) {
+                // 随机选择一个相邻块进行交换
+                const randomPiece = adjacentPieces[Math.floor(Math.random() * adjacentPieces.length)];
+                const tempPos = emptyPiece.currentPos;
+                emptyPiece.currentPos = randomPiece.currentPos;
+                randomPiece.currentPos = tempPos;
+            }
+        }
+        
+        moves = 0;
+        gameCompleted = false;
+        winMessage.style.display = 'none';
+        renderPuzzle();
+        updateStats();
+    }
+
+    // 更新统计信息
+    function updateStats() {
+        movesDisplay.textContent = moves;
+        
+        // 计算正确位置的数量
+        let correctCount = 0;
+        pieces.forEach(piece => {
+            if (piece.id !== emptyIndex && piece.currentPos === piece.correctPos) {
+                correctCount++;
+            }
+        });
+        
+        progressDisplay.textContent = `${correctCount}/8`;
+        const progress = (correctCount / 8) * 100;
+        progressFill.style.width = progress + '%';
+    }
+
+    // 检查是否完成
+    function checkWin() {
+        let isWin = true;
+        pieces.forEach(piece => {
+            if (piece.id !== emptyIndex && piece.currentPos !== piece.correctPos) {
+                isWin = false;
+            }
+        });
+        
+        if (isWin) {
+            gameCompleted = true;
+            winMessage.style.display = 'block';
+            
+            // 解锁建筑
+            localStorage.setItem(currentLevel, "unlocked");
+            
+            // 判断是否是图书馆（最终关卡）
+            if (currentLevel === 'library') {
+                // 标记已完成全部探索
+                localStorage.setItem('allExplored', 'true');
+                
+                setTimeout(() => {
+                    showFinalCelebration();
+                }, 500);
+            } else {
+                setTimeout(() => {
+                    alert(`🎉 恭喜！你用 ${moves} 步完成了拼图！\n成功解锁${buildingNames[currentLevel]}！`);
+                    window.location.href = `../map.html?showInfo=${currentLevel}`;
+                }, 500);
+            }
+        }
+    }
+
+    // 最终完成庆祝（图书馆通关）
+    function showFinalCelebration() {
+        // 创建庆祝弹窗
+        const celebrationDiv = document.createElement('div');
+        celebrationDiv.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.5s ease;
+        `;
+        
+        celebrationDiv.innerHTML = `
+            <div style="
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-radius: 40px;
+                padding: 40px;
+                max-width: 500px;
+                width: 90%;
+                text-align: center;
+                box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+                animation: slideUp 0.6s ease;
+                border: 3px solid #FFD700;
+            ">
+                <div style="font-size: 80px; margin-bottom: 20px; animation: bounce 1s infinite;">
+                    🎉🏆🎉
+                </div>
+                <h2 style="
+                    color: #FFD700;
+                    font-size: 32px;
+                    margin-bottom: 20px;
+                    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+                ">
+                    🎓 恭喜你！🎓
+                </h2>
+                <p style="
+                    color: white;
+                    font-size: 18px;
+                    line-height: 1.8;
+                    margin-bottom: 30px;
+                ">
+                    你已经成功探索了杭电下沙校区的所有建筑！<br>
+                    <span style="color: #FFD700; font-weight: bold;">
+                        成为真正的杭电校园通！
+                    </span>
+                </p>
+                <div style="
+                    background: rgba(255,255,255,0.2);
+                    border-radius: 20px;
+                    padding: 20px;
+                    margin-bottom: 30px;
+                ">
+                    <p style="color: #f0f0f0; font-size: 14px;">
+                        📚 图书馆 · 🏫 教学楼 · 🍚 食堂 · 🏟️ 体育馆 · 🎪 活动中心
+                    </p>
+                    <p style="color: #FFD700; margin-top: 10px; font-size: 16px;">
+                        ⭐ 全部解锁完成！ ⭐
+                    </p>
+                </div>
+                <button onclick="window.location.href='../map.html'" style="
+                    background: white;
+                    color: #667eea;
+                    border: none;
+                    padding: 15px 40px;
+                    border-radius: 50px;
+                    font-size: 18px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                    返回地图 🗺️
+                </button>
+            </div>
+        `;
+        
+        // 添加动画样式
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes slideUp {
+                from { opacity: 0; transform: translateY(50px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            @keyframes bounce {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-10px); }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        document.body.appendChild(celebrationDiv);
+    }
+
+    // 返回地图
+    function goBack() {
+        if (gameCompleted || confirm('游戏进行中，确定要返回吗？')) {
+            window.location.href = "../map.html";
+        }
+    }
+
+    // 一键通关
+    function quickWin() {
+        if (gameCompleted) return;
+        
+        if (confirm('确定要直接通关吗？')) {
+            pieces.forEach((piece, index) => {
+                piece.currentPos = piece.correctPos;
+            });
+            
+            const emptyPiece = pieces.find(p => p.id === emptyIndex);
+            emptyPiece.currentPos = 8;
+            
+            renderPuzzle();
+            updateStats();
+            
+            gameCompleted = true;
+            winMessage.style.display = 'block';
+            localStorage.setItem(currentLevel, "unlocked");
+            
+            if (currentLevel === 'library') {
+                localStorage.setItem('allExplored', 'true');
+                setTimeout(() => {
+                    showFinalCelebration();
+                }, 500);
+            } else {
+                setTimeout(() => {
+                    alert(`🎉 恭喜！你成功解锁了${buildingNames[currentLevel]}！`);
+                    window.location.href = `../map.html?showInfo=${currentLevel}`;
+                }, 500);
+            }
+        }
+    }
+
+    // 全局函数
+    window.shufflePuzzle = shufflePuzzle;
+    window.goBack = goBack;
+
+    // 启动游戏
+    window.onload = init;
+</script>
+</body>
+</html>
