@@ -17,6 +17,10 @@
             min-height: 100vh;
             padding: 20px;
         }
+        /* 添加在 body 样式之后即可 */
+        [v-cloak] {
+            display: none !important;
+        }
 
         .app {
             max-width: 1400px;
@@ -611,132 +615,142 @@
                     name: '图书馆',
                     badge: '标志建筑',
                     zone: 'teaching',
-                    imageUrl: 'https://picsum.photos/id/1043/800/500',
+                    imageUrl: 'images/puzzle/library.png',
                     details: {
-                        collection: '200万册',
-                        hours: '8:00 - 22:00',
-                        seats: '3000个',
-                        year: '2005年',
-                        floors: '5层'
+                        collection: '516.05万册',  // 修正：包含纸质+电子图书
+                        hours: '7:00 - 22:00',      // 修正：最长开放时段
+                        seats: '约4000个',          // 修正：设计座位数
+                        year: '2003年',             // 修正：实际建成年份
+                        floors: '12层'              // 修正：实际楼层数
                     },
-                    description: '杭电图书馆是学校的标志性建筑，藏书丰富，涵盖工、理、管、文等多学科领域。设有自习室、研讨室、电子阅览室等，是学生学习和研究的重要场所。'
+                    description: '杭电图书馆是学校的标志性建筑，藏书丰富，涵盖工、理、经、管、文等多学科领域。设有自习室、研讨室、电子阅览室等，是学生学习和研究的重要场所。'
                 },
                 teachingA: {
                     name: '6教 7教',
                     badge: '主教学楼',
                     zone: 'teaching',
-                    imageUrl: 'https://picsum.photos/id/1040/800/500',
+                    imageUrl: 'images/challenge/teachingA.png',
                     details: {
                         capacity: '5000人',
-                        floors: '6层',
+                        floors: '5层',
                         year: '2003年',
-                        courses: '公共课、专业课'
+                        courses: '全校性公选课、跨学院选修课、大一主要课程'
                     },
-                    description: '6教7教是学校主要的教学场所，拥有多媒体教室、语音室、计算机房等现代化教学设施。'
+                    description: '6教7教是学校主要的教学场所，拥有多媒体教室、语音室、计算机房等现代化教学设施。其中七教南楼设有云怡阁休闲吧，可供师生课间休息。'
                 },
                 teachingB: {
                     name: '1教2教',
                     badge: '实验楼',
-                    zone: 'teaching',  // 属于教学区
-                    imageUrl: 'https://picsum.photos/id/1041/800/500',
+                    zone: 'teaching',
+                    imageUrl: 'images/challenge/teachingB.png',
                     details: {
                         facilities: '实验室、计算机房、多媒体教室',
                         floors: '5层',
                         year: '2006年',
-                        courses: '实验课、上机课'
+                        courses: '实验课、上机课、理工科专业课'  // 修正：一教二教同时也是多个理工科学院的教学楼
                     },
-                    description: '1教2教是学校主要的实验教学场所，配备先进的实验室设备、计算机房和多媒体教室，为理工科学生提供优质的实验教学环境。'
+                    description: '1教2教是学校主要的实验教学场所，配备先进的实验室设备、计算机房和多媒体教室，为理工科学生提供优质的实验教学环境。其中一教（信仁楼）为计算机学院、通信工程学院所在地，二教（信义楼）为自动化学院、电子信息学院、机械工程学院所在地。'
                 },
                 teachingC: {
-                    name: '教学楼C',
-                    badge: '综合楼',
-                    zone: 'teaching',  // 属于教学区
-                    imageUrl: 'https://picsum.photos/id/1042/800/500',
-                    details: {
-                        facilities: '阶梯教室、智慧教室、自习室',
-                        floors: '6层',
-                        year: '2008年',
-                        courses: '公共课、大型讲座'
-                    },
-                    description: '3教是学校的综合教学楼，拥有大型阶梯教室和智慧教室，可容纳大量学生同时上课，是公共课程和学术讲座的主要场所。'
+                name: '3教',
+                badge: '综合楼',
+                zone: 'teaching',
+                imageUrl: 'images/challenge/teachingC.png',
+                details: {
+                    facilities: '阶梯教室、智慧教室、自习室、多媒体大教室、机房',
+                    floors: '6层',
+                    year: '2008年',
+                    courses: '公共课、文化选修课、英语视听说课程、计算机上机课'
                 },
-                                teachingD: {
+                description: `三教（信理楼/信礼楼）是外国语学院所在地，设有现代教育技术楼，拥有大型阶梯教室、多媒体大教室和大型机房，用于公共课、文化选修课、英语视听说课程及计算机上机课等。`
+                },
+                teachingD: {
                     name: '4教',
                     badge: '专业楼',
-                    zone: 'teaching',  // 属于教学区
-                    imageUrl: 'https://picsum.photos/id/1044/800/500',
+                    zone: 'teaching',
+                    imageUrl: 'images/challenge/teachingD.png',
                     details: {
-                        facilities: '专业教室、工作室、研讨室',
-                        floors: '4层',
-                        year: '2012年',
-                        courses: '专业课、小班教学'
+                        facilities: '综合实验平台、科研展览厅、教学实验室、学术报告厅、教授工作室',
+                        floors: '8层',
+                        year: '2018年',
+                        courses: '实验课、科研项目、学术讲座'
                     },
-                    description: '4教是专业课程教学楼，设有各专业专用教室、工作室和研讨室，为小班化教学和专业实践提供优质环境。'
+                    description: `4教（信智楼）是学校的综合实验楼，采用回字形布局，共8层（地上7层，地下1层），于2018年开工建设。
+                    内设综合实验平台、科研展览厅、教学实验室、学术报告厅、教授工作室等设施，可全校共享，为实验教学、科研活动和学术交流提供优质环境。`
                 },
                 canteen1: {
                     name: '一餐、清真餐厅',
-                    badge: '美食天地',
+                    badge: '风味餐厅',
                     zone: 'life',
                     imageUrl: 'https://picsum.photos/id/1080/800/500',
                     details: {
-                        cuisine: '中式快餐、面点',
+                        cuisine: '盖浇饭、盖浇面、川锅、拉面、清真面食、香锅',
                         hours: '6:30 - 21:00',
                         seats: '1200个',
-                        floors: '3层'
+                        floors: '2层'
                     },
-                    description: '一餐、清真餐厅提供丰富的中式快餐，价格实惠，口味多样，是学生日常用餐的首选之地。'
+                    description: `一餐（第一餐厅）位于生活区南二门附近，被男生宿舍包围，是男生就餐的主要场所。菜品价格实惠，盖浇饭和盖浇面是特色，川锅也备受好评。
+                    清真餐厅位于二餐楼上（即一餐楼上），环境优越，主营香锅、拉面、清真面食等，口味偏重，价格区间6-15元，深受师生喜爱。`
                 },
                 canteen2: {
                     name: '三餐、美食城',
-                    badge: '风味餐厅',
+                    badge: '美食天地',
                     zone: 'life',
                     imageUrl: 'https://picsum.photos/id/1081/800/500',
                     details: {
-                        cuisine: '各地风味小吃',
+                        cuisine: '早点面点、减脂套餐、手工煎饺、蜜汁山药、麻辣烫、黄焖鸡、铁板饭、兰州拉面、巴比馒头',
                         hours: '7:00 - 20:30',
                         seats: '800个',
                         floors: '2层'
                     },
-                    description: '三餐、美食城汇集全国各地风味小吃，麻辣烫、煎饼果子、煲仔饭等应有尽有，满足不同口味需求。'
+                    description: `三餐（第三餐厅）是杭电人的早餐"圣地"，馄饨、玉米、番薯、自制豆浆及40余种面点应有尽有[citation:6]。近期推出的减脂套餐（黑胡椒牛肉、原味鸡胸等）备受欢迎，主打低脂科学配比[citation:2][citation:5]。手工煎饺、蜜汁山药等也是招牌美食[citation:8]。
+                    美食城汇集各地风味小吃，黄焖鸡、台南小铁板、兰州拉面等深受喜爱，巴比馒头早餐排队很长[citation:1]。一层以中式快餐为主（人均约8元），二层设广式蒸笼饭（人均约12元）[citation:10]。`
                 },
                 canteen3: {
                     name: '五餐、六餐',
-                    badge: '清真食堂',
+                    badge: '品质食堂',
                     zone: 'life',
                     imageUrl: 'https://picsum.photos/id/1082/800/500',
                     details: {
-                        cuisine: '清真美食',
+                        cuisine: '自选餐、盖浇饭、酸菜鱼、鱼香肉丝、年糕烧排骨、牙签肉、香芋扣肉',
                         hours: '7:00 - 20:00',
                         seats: '500个',
                         floors: '2层'
                     },
-                    description: '五餐、六餐是清真食堂，提供正宗清真美食，环境整洁，服务周到。'
+                    description: `五餐、六餐位于生活区东北角，五餐是杭电唯一A级食堂，被女生宿舍包围，环境整洁，硬件先进。六餐在五餐楼上，以服务周到、环境雅致著称，是全国百强食堂，省长曾亲临用餐。
+                    五餐特色菜品有腊鸡、凉拌猪心、酱烧鸡腿、蘑菇肉片盖浇饭、雪菜焗排骨等。六餐主打浙江江南风味，酸菜鱼、鱼香肉丝、年糕烧排骨、牙签肉、香芋扣肉备受好评，更有"豆腐番茄蛋丝汤"为独有菜品。`
                 },
                 gym: {
                     name: '体育馆',
-                    badge: '运动中心',
+                    badge: '亚运场馆',  // 改自 '运动中心'，突出承办亚运击剑比赛的核心亮点
                     zone: 'life',
-                    imageUrl: 'https://picsum.photos/id/1047/800/500',
+                    imageUrl: 'images/puzzle/feidieguan.png',
                     details: {
-                        facilities: '篮球场、羽毛球馆、健身房',
+                        facilities: '击剑道、篮球场、羽毛球馆、健身房、乒乓球室',
                         hours: '8:00 - 21:30',
-                        capacity: '2000人',
-                        year: '2008年'
+                        capacity: '4599人',
+                        year: '2006年'
                     },
-                    description: '体育馆设施齐全，包括室内篮球场、羽毛球馆、乒乓球室、健身房等，是学生体育锻炼和举办赛事的主要场所。'
+                    description: `体育馆因外形酷似飞碟，被师生称为"飞碟馆"或杭电"UFO"[citation:1][citation:5]。2006年建成，曾是CBA浙江万马队主场，承办过多项国家级赛事[citation:1][citation:9]。2023年作为杭州亚运会击剑项目比赛场馆，设有4599个观众席位，被评为节俭办赛"模范生"[citation:1][citation:7]。
+
+                场馆设施齐全，包括室内篮球场、羽毛球馆、乒乓球室、健身房等，是学生体育锻炼和举办大型活动的主要场所。亚运后热身馆将改造为羽毛球馆，主馆保留击剑设施用于开设击剑课程[citation:1]。`
                 },
                 studentCenter: {
                     name: '学生活动中心',
-                    badge: '社团天地',
-                    zone: 'teaching',  // 属于教学区
+                    badge: '文化地标',
+                    zone: 'teaching',
                     imageUrl: 'https://picsum.photos/id/1059/800/500',
                     details: {
-                        facilities: '排练厅、会议室、展览厅',
+                        facilities: '剧院、党群服务中心、党建智治中心、联谊大厅、排练厅、会议室、展览厅、书吧',
                         hours: '8:00 - 22:00',
-                        floors: '4层',
-                        year: '2010年'
+                        floors: '3层',
+                        year: '2000年代前期'
                     },
-                    description: '学生活动中心是学生社团活动的主要场所，设有舞蹈排练厅、音乐练习室、会议室、展览厅等，丰富学生的课余文化生活，是校园文化活动的重要阵地。'
+                    description: `学生活动中心（简称"学活"）是省内高校中最大的学生文化活动中心，总建筑面积10320平方米，共3层，建筑风格独特，是下沙大学城标志性建筑之一。
+
+                内设剧院（824座）、联谊大厅（1000平米路演场地）、党群服务中心、党建智治中心等功能区，集剧院、艺术教学、学生社团活动、休闲娱乐于一体。
+
+                同时设有"10分钟阅读圈"书吧，精准配置文艺、体育、健康生活等"橙色书籍"，是学生文化活动的重要阵地。`
                 }
             },
 

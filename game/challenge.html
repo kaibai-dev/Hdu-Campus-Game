@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>挑战关卡 · 极简卡片</title>
+    <title>挑战关卡 · 校园建筑</title>
     <style>
         * {
             margin: 0;
@@ -94,37 +94,53 @@
         }
 
         .game-area {
-            background: linear-gradient(145deg, #f1f3f5, #e9ecef);
             border-radius: 24px;
             margin-bottom: 30px;
-            box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
         }
 
         #gameArea {
             width: 100%;
-            height: 350px;
+            min-height: 450px;
             position: relative;
             overflow: hidden;
             border-radius: 24px;
             cursor: crosshair;
+            background-size: cover !important;
+            background-position: center !important;
+            background-repeat: no-repeat !important;
+        }
+
+        /* 半透明遮罩层，让目标物更突出 */
+        #gameArea::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 24px;
+            pointer-events: none;
+            z-index: 0;
         }
 
         #target {
-            width: 80px;
-            height: 80px;
             position: absolute;
             cursor: pointer;
             border-radius: 20px;
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.5);
             transition: all 0.2s ease;
             animation: pulse 2s infinite;
             user-select: none;
-            border: 3px solid white;
+            border: 4px solid white;
+            z-index: 1;
         }
 
         #target:hover {
-            transform: scale(1.1);
-            box-shadow: 0 12px 30px rgba(102, 126, 234, 0.5);
+            transform: scale(1.08);
+            box-shadow: 0 12px 30px rgba(102, 126, 234, 0.6);
         }
 
         #target:active {
@@ -132,8 +148,8 @@
         }
 
         @keyframes pulse {
-            0%, 100% { box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3); }
-            50% { box-shadow: 0 12px 30px rgba(102, 126, 234, 0.6); }
+            0%, 100% { box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4); }
+            50% { box-shadow: 0 12px 30px rgba(102, 126, 234, 0.7); }
         }
 
         .progress-section {
@@ -234,8 +250,9 @@
             .game-header h1 { font-size: 2rem; }
             .stat-value { font-size: 2rem; }
             .stat-icon { font-size: 1.5rem; }
-            #target { width: 70px; height: 70px; }
+            #target { width: 100px !important; height: 100px !important; }
             .btn { padding: 12px 20px; font-size: 0.9rem; }
+            #gameArea { min-height: 380px; }
         }
     </style>
 </head>
@@ -327,19 +344,23 @@ function init() {
     buildingDisplay.textContent = buildingNames[level] || '未知建筑';
 
     const imageUrl = buildingImages[level];
-    target.style.cssText = `
-        width: 80px;
-        height: 80px;
-        position: absolute;
-        cursor: pointer;
-        border-radius: 20px;
-        border: 3px solid white;
-        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-        background-image: url('${imageUrl}');
-        background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
-    `;
+    
+    // 设置游戏区域背景为建筑图片
+    area.style.backgroundImage = `url('${imageUrl}')`;
+    area.style.backgroundSize = 'cover';
+    area.style.backgroundPosition = 'center';
+    area.style.backgroundRepeat = 'no-repeat';
+    
+    // 设置目标物样式（放大尺寸）
+    target.style.width = '120px';
+    target.style.height = '120px';
+    target.style.backgroundImage = `url('${imageUrl}')`;
+    target.style.backgroundSize = 'cover';
+    target.style.backgroundPosition = 'center';
+    target.style.backgroundRepeat = 'no-repeat';
+    target.style.borderRadius = '20px';
+    target.style.border = '4px solid white';
+    target.style.boxShadow = '0 8px 20px rgba(102, 126, 234, 0.5)';
 
     updateProgress();
     target.onclick = handleClick;
